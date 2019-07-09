@@ -16,7 +16,7 @@ use std::error;
 use std::fmt;
 use std::io;
 use std::sync::Mutex;
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 
 #[cfg(not(target_os = "ios"))]
 use self::security_framework::os::macos::certificate::{PropertyType, SecCertificateExt};
@@ -31,7 +31,7 @@ use self::security_framework_sys::base::errSecParam;
 
 use {Protocol, TlsAcceptorBuilder, TlsConnectorBuilder};
 
-static SET_AT_EXIT: Once = ONCE_INIT;
+static SET_AT_EXIT: Once = Once::new();
 
 #[cfg(not(target_os = "ios"))]
 lazy_static! {
@@ -55,8 +55,8 @@ impl error::Error for Error {
         error::Error::description(&self.0)
     }
 
-    fn cause(&self) -> Option<&error::Error> {
-        error::Error::cause(&self.0)
+    fn cause(&self) -> Option<&dyn error::Error> {
+        error::Error::source(&self.0)
     }
 }
 

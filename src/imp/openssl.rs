@@ -125,10 +125,10 @@ impl error::Error for Error {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
-            Error::Normal(ref e) => error::Error::cause(e),
-            Error::Ssl(ref e, _) => error::Error::cause(e),
+            Error::Normal(ref e) => error::Error::source(e),
+            Error::Ssl(ref e, _) => error::Error::source(e),
         }
     }
 }
