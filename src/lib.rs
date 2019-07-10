@@ -182,6 +182,11 @@ impl Identity {
         let identity = imp::Identity::from_pkcs12(der, password)?;
         Ok(Identity(identity))
     }
+
+    pub fn from_pkcs8(der: &[u8], key: &[u8]) -> Result<Identity> {
+        let identity = imp::Identity::from_pkcs8(der, key)?;
+        Ok(Identity(identity))
+    }
 }
 
 /// An X509 certificate.
