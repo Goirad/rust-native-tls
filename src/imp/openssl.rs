@@ -4,7 +4,7 @@ extern crate openssl_probe;
 use self::openssl::error::ErrorStack;
 use self::openssl::hash::MessageDigest;
 use self::openssl::nid::Nid;
-use self::openssl::pkcs12::{ParsedPkcs12, Pkcs12};
+use self::openssl::pkcs12::Pkcs12;
 use self::openssl::pkey::{PKey, Private};
 use self::openssl::ssl::{
     self, MidHandshakeSslStream, SslAcceptor, SslConnector, SslContextBuilder, SslMethod,
@@ -14,8 +14,8 @@ use self::openssl::x509::{X509VerifyResult, X509};
 use std::error;
 use std::fmt;
 use std::io;
-use std::sync::{Once, ONCE_INIT};
-
+use std::sync::Once;
+use pem;
 use {Protocol, TlsAcceptorBuilder, TlsConnectorBuilder};
 
 #[cfg(have_min_max_version)]
@@ -89,7 +89,7 @@ fn supported_protocols(
 }
 
 fn init_trust() {
-    static ONCE: Once = ONCE_INIT;
+    static ONCE: Once = Once::new();
     ONCE.call_once(|| openssl_probe::init_ssl_cert_env_vars());
 }
 
@@ -150,39 +150,6 @@ impl From<ErrorStack> for Error {
     }
 }
 
-/// Split data by PEM guard lines
-struct PemBlock<'a> {
-    pem_block: &'a str,
-    cur_end: usize,
-}
-
-impl<'a> PemBlock<'a> {
-    fn new(data: &'a [u8]) -> PemBlock<'a> {
-        let s = std::str::from_utf8(data).unwrap();
-        PemBlock {
-            pem_block: s,
-            cur_end: s.find("-----BEGIN").unwrap_or(s.len()),
-        }
-    }
-}
-
-impl<'a> Iterator for PemBlock<'a> {
-    type Item = &'a [u8];
-    fn next(&mut self) -> Option<Self::Item> {
-        let last = self.pem_block.len() - 1;
-        if self.cur_end >= last {
-            return None;
-        }
-        let begin = self.cur_end;
-        let pos = self.pem_block[begin + 1..].find("-----BEGIN");
-        self.cur_end = match pos {
-            Some(end) => end + begin + 1,
-            None => last,
-        };
-        return Some(&self.pem_block[begin..self.cur_end].as_bytes());
-    }
-}
-
 pub struct Identity {
     pkey: PKey<Private>,
     cert: X509,
@@ -202,7 +169,7 @@ impl Identity {
 
     pub fn from_pkcs8(buf: &[u8], key: &[u8]) -> Result<Identity, Error> {
         let pkey = PKey::private_key_from_pem(key)?;
-        let p_block = PemBlock::new(buf);
+        let p_block = pem::PemBlock::new(buf);
         let mut chain: Vec<X509> = p_block.map(|buf| X509::from_pem(buf).unwrap()).collect();
         let cert = chain.pop();
         Ok(Identity {

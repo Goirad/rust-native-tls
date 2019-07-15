@@ -97,11 +97,13 @@
 #![warn(missing_docs)]
 
 #[macro_use]
-#[cfg(any(target_os = "macos", target_os = "ios"))]
 extern crate lazy_static;
 
 #[cfg(test)]
 extern crate hex;
+
+extern crate rustc_serialize;
+mod pem;
 
 use std::any::Any;
 use std::error;
@@ -183,8 +185,10 @@ impl Identity {
         Ok(Identity(identity))
     }
 
-    pub fn from_pkcs8(der: &[u8], key: &[u8]) -> Result<Identity> {
-        let identity = imp::Identity::from_pkcs8(der, key)?;
+    /// buf is the contents of a file containing a chain of PEM encoded certificates
+    /// key is the contents of a file containing a PEM encoded private key
+    pub fn from_pkcs8(pem: &[u8], key: &[u8]) -> Result<Identity> {
+        let identity = imp::Identity::from_pkcs8(pem, key)?;
         Ok(Identity(identity))
     }
 }
