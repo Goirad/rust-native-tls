@@ -45,7 +45,10 @@ pub fn pem_to_der<T: ?Sized + AsRef<[u8]>>(pem: &T, guard: Option<&PemGuard>) ->
         Err(_) => return None,
         Ok(p) => p,
     };
-    
+    let pem = match pem.find("-----") {
+        Some(i) => pem.split_at(i).1,
+        None => return None,
+    };
     let mut lines = pem.lines();
 
     let begin = match lines.next() {

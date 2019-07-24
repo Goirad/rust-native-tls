@@ -286,9 +286,13 @@ mod tests {
 
     #[test]
     fn import_same_identity_multiple_times() {
-        let buf = include_bytes!("../test/identity.p12");
-        let _ = p!(Identity::from_pkcs12(buf, "mypass"));
-        let _ = p!(Identity::from_pkcs12(buf, "mypass"));
+        let p12buf = include_bytes!("../test/identity.p12");
+        let p8buf = include_bytes!("../test/chain.pem");
+        let key = include_bytes!("../test/key.pem");
+        let _ = p!(Identity::from_pkcs12(p12buf, "mypass"));
+        let _ = p!(Identity::from_pkcs12(p12buf, "mypass"));
+        let _ = p!(Identity::from_pkcs8(p8buf, key));
+        let _ = p!(Identity::from_pkcs8(p8buf, key));
     }
 
     #[test]
