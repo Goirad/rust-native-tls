@@ -76,7 +76,7 @@ pub fn pem_to_der<T: ?Sized + AsRef<[u8]>>(pem: &T, guard: Option<&PemGuard>) ->
         .skip_while(|t| t.1.is_whitespace())
         .next().unwrap().0;
     let body_end = pem.rmatch_indices(&end).next().unwrap().0;
-
+    dbg!(&pem[body_start..body_end]);
     pem[body_start..body_end].from_base64().ok()
 }
 
@@ -149,6 +149,15 @@ fn test_pem() {
                           AAECAwQFBgcICQoLDA0ODw==\n\
                           -----END CERTIFICATE-----\n", None).unwrap(),
                vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+}
+
+#[test]
+fn test_pem_to_der_key() {
+    let key_der = include_bytes!("../test/key.der");
+    let key_pem = include_bytes!("../test/key.pem");
+    let converted = pem_to_der(&key_pem.as_ref(), None).unwrap();
+    println!("{:?}", key_der.to_vec().iter().zip(converted.iter()).map(|(a, b)| *a as i16 - *b as i16).collect::<Vec<i16>>());
+    assert!(*key_der.as_ref() == *converted.as_slice());
 }
 
 
