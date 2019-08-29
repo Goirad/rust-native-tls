@@ -39,8 +39,8 @@ impl error::Error for Error {
         error::Error::description(&self.0)
     }
 
-    fn cause(&self) -> Option<&error::Error> {
-        error::Error::cause(&self.0)
+    fn cause(&self) -> Option<&dyn error::Error> {
+        error::Error::source(&self.0)
     }
 }
 
@@ -101,25 +101,23 @@ impl Identity {
         let mut store = Memory::new()?.into_store();
         let mut cert_iter = crate::pem::PemBlock::new(pem).into_iter();
         let leaf = cert_iter.next().unwrap();
-        dbg!(std::str::from_utf8(&leaf));
         let cert = CertContext::from_pem(std::str::from_utf8(leaf).unwrap()).unwrap();
 
         let mut options = AcquireOptions::new();
-        options.container("schannel-test");
+        options.container("schannel");
         let type_ = ProviderType::rsa_full();
 
         let mut container = match options.acquire(type_) {
             Ok(container) => container,
             Err(_) => options.new_keyset(true).acquire(type_).unwrap(),
         };
-        let key = crate::pem::pem_to_der(key, None).unwrap();
-        println!("{:?}", &key);
+        let key = crate::pem::pem_to_der(key, Some(crate::pem::PEM_PRIVATE_KEY)).unwrap();
         container.import()
-            .import(&key)
+            .import_pkcs8(&key)
             .unwrap();
 
         cert.set_key_prov_info()
-            .container("schannel-test")
+            .container("schannel")
             .type_(type_)
             .keep_open(true)
             .key_spec(KeySpec::key_exchange())
